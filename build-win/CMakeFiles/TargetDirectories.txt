@@ -1,0 +1,4 @@
+C:/Users/Zhuoxiao Zhang/projects/ColorVision++/build-win/CMakeFiles/color_cli.dir
+C:/Users/Zhuoxiao Zhang/projects/ColorVision++/build-win/CMakeFiles/color_camera.dir
+C:/Users/Zhuoxiao Zhang/projects/ColorVision++/build-win/CMakeFiles/edit_cache.dir
+C:/Users/Zhuoxiao Zhang/projects/ColorVision++/build-win/CMakeFiles/rebuild_cache.dir
