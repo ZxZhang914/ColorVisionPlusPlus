@@ -1,10 +1,11 @@
 # Build output
 build/
+build-*/
 
 # Python
 __pycache__/
 *.pyc
 web/__pycache__/
 
-# Screenshots saved by color_camera
-screenshot_*.png
+# Cards, photos and progress saved by color_camera
+captures/

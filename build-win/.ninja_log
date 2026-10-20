@@ -1,7 +1,0 @@
-# ninja log v7
-49	373	7958563018950593	CMakeFiles/color_camera.dir/src/ColorDetector.cpp.obj	3776a4a528ce8aa9
-22	379	7958563018695710	CMakeFiles/color_cli.dir/src/ColorDetector.cpp.obj	4f81d97392dc0171
-8	398	7958563018551655	CMakeFiles/color_cli.dir/src/main.cpp.obj	769c5e7f04a2d2af
-399	618	7958563022440012	color_cli.exe	23a220e6c1ca3b1a
-35	1313	7958563018824802	CMakeFiles/color_camera.dir/src/realtime.cpp.obj	c8ae39e45db130da
-1315	1535	7958563031611554	color_camera.exe	f1da37717b2686d6

@@ -161,6 +161,13 @@ double deltaE2000(const Lab& c1, const Lab& c2) {
                      + R_T * cTerm * hTerm);
 }
 
+const char* deltaELabel(double dE) {
+    if (dE < 1.0)  return "imperceptible";
+    if (dE < 2.0)  return "just noticeable";
+    if (dE < 10.0) return "clearly noticeable";
+    return "very different";
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  Built-in color palette (representative sample from XKCD color survey)
 //  Monroe, R. (2010). XKCD Color Survey. https://blog.xkcd.com/2010/05/03/color-survey-results/
@@ -322,4 +329,41 @@ const NamedColor& nearestColor(const Lab& query, const std::vector<NamedColor>& 
 std::string classifyByDeltaE(int r, int g, int b, const std::vector<NamedColor>& palette) {
     Lab lab = rgbToLab(r, g, b);
     return nearestColor(lab, palette).name;
+}
+
+std::vector<ColorMatch> nearestColors(const Lab& query, const std::vector<NamedColor>& palette,
+                                      size_t k) {
+    std::vector<ColorMatch> all;
+    all.reserve(palette.size());
+    for (const auto& nc : palette) all.push_back({&nc, deltaE2000(query, nc.lab)});
+    std::sort(all.begin(), all.end(),
+              [](const ColorMatch& x, const ColorMatch& y) { return x.dE < y.dE; });
+
+    // Skip repeated names so the runner-ups are genuinely different answers
+    std::vector<ColorMatch> top;
+    for (const auto& m : all) {
+        if (top.size() == k) break;
+        bool seen = std::any_of(top.begin(), top.end(),
+                                [&](const ColorMatch& t) { return t.color->name == m.color->name; });
+        if (!seen) top.push_back(m);
+    }
+    return top;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Memoised nearest-name lookup
+// ─────────────────────────────────────────────────────────────────────────────
+NamedColorCache::NamedColorCache(const std::vector<NamedColor>& palette)
+    : palette_(&palette), cell_(64 * 64 * 64, -1) {
+    assert(palette.size() < 32767);
+}
+
+const NamedColor& NamedColorCache::lookup(int r, int g, int b) {
+    int16_t& c = cell_[((r >> 2) << 12) | ((g >> 2) << 6) | (b >> 2)];
+    if (c < 0) {
+        // Name the cell by its centre so every color inside it shares one answer
+        Lab lab = rgbToLab((r & ~3) + 2, (g & ~3) + 2, (b & ~3) + 2);
+        c = static_cast<int16_t>(&nearestColor(lab, *palette_) - palette_->data());
+    }
+    return (*palette_)[c];
 }

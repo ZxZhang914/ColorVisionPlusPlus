@@ -223,17 +223,10 @@ int main() {
               << "    < 2.0  just noticeable\n"
               << "    < 10.0 clearly noticeable\n\n";
 
-    auto deLabel = [](double de) -> const char* {
-        if (de < 1.0)  return "imperceptible";
-        if (de < 2.0)  return "just noticeable";
-        if (de < 10.0) return "clearly noticeable";
-        return "very large";
-    };
-
     std::cout << "  HSV baseline   : " << std::fixed << std::setprecision(2)
-              << hsvMDE << "  (" << deLabel(hsvMDE) << ")\n";
+              << hsvMDE << "  (" << deltaELabel(hsvMDE) << ")\n";
     std::cout << "  dE2000 nearest : " << std::fixed << std::setprecision(2)
-              << deMDE  << "  (" << deLabel(deMDE)  << ")\n";
+              << deMDE  << "  (" << deltaELabel(deMDE)  << ")\n";
 
     std::cout << "\n  Throughput:\n";
     std::cout << "  HSV baseline   : " << std::fixed << std::setprecision(0)

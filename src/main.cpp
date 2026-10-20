@@ -4,6 +4,7 @@
 #include <cstring>
 #include "ColorDetector.h"
 #include "ColorScience.h"
+#include "DominantColors.h"
 
 // Non-interactive JSON mode: color_cli --json R G B
 static int jsonMode(int r, int g, int b) {
@@ -15,11 +16,6 @@ static int jsonMode(int r, int g, int b) {
     Lab lab = rgbToLab(r, g, b);
     const NamedColor& nearest = nearestColor(lab, palette);
     double de = deltaE2000(lab, nearest.lab);
-
-    const char* deLabel =
-        de < 1.0  ? "imperceptible" :
-        de < 2.0  ? "just noticeable" :
-        de < 10.0 ? "clearly noticeable" : "very different";
 
     // Hex string
     char hex[8];
@@ -38,8 +34,35 @@ static int jsonMode(int r, int g, int b) {
               << "\"hsv_name\":\"" << hsvName << "\","
               << "\"de_name\":\"" << nearest.name << "\","
               << "\"de_value\":" << de << ","
-              << "\"de_label\":\"" << deLabel << "\""
+              << "\"de_label\":\"" << deltaELabel(de) << "\""
               << "}\n";
+    return 0;
+}
+
+// Non-interactive palette mode: color_cli --palette IMAGE [K]
+// K-Means++ in Lab on the image, each centroid named by ΔE2000; JSON output.
+static int paletteMode(const char* path, int K) {
+    cv::Mat img = cv::imread(path, cv::IMREAD_COLOR);
+    if (img.empty()) {
+        std::cerr << "Cannot read image: " << path << "\n";
+        return 1;
+    }
+    auto colors = extractDominantColors(img, getBuiltinPalette(), K, 25, 4000);
+
+    std::cout << std::fixed << std::setprecision(3) << "{\"colors\":[";
+    for (size_t i = 0; i < colors.size(); ++i) {
+        const auto& c = colors[i];
+        char hex[8];
+        std::snprintf(hex, sizeof(hex), "%02X%02X%02X", c.r, c.g, c.b);
+        std::cout << (i ? "," : "") << "{"
+                  << "\"r\":" << c.r << ",\"g\":" << c.g << ",\"b\":" << c.b << ","
+                  << "\"hex\":\"" << hex << "\","
+                  << "\"fraction\":" << c.fraction << ","
+                  << "\"de_name\":\"" << c.nearestName << "\","
+                  << "\"de_value\":" << c.nearestDE
+                  << "}";
+    }
+    std::cout << "]}\n";
     return 0;
 }
 
@@ -47,6 +70,10 @@ int main(int argc, char* argv[]) {
     // --json R G B  →  single-shot JSON output for API calls
     if (argc == 5 && std::strcmp(argv[1], "--json") == 0) {
         return jsonMode(std::atoi(argv[2]), std::atoi(argv[3]), std::atoi(argv[4]));
+    }
+    if ((argc == 3 || argc == 4) && std::strcmp(argv[1], "--palette") == 0) {
+        int K = argc == 4 ? std::atoi(argv[3]) : 6;
+        return paletteMode(argv[2], std::max(1, std::min(K, 12)));
     }
     ColorDetector detector;
     const std::vector<NamedColor>& palette = getBuiltinPalette();
@@ -99,12 +126,8 @@ int main(int argc, char* argv[]) {
         std::cout << "\n";
         std::cout << "  HSV classifier : " << hsvName << "\n";
         std::cout << "  ΔE2000 nearest : " << nearest.name
-                  << "  (ΔE=" << std::fixed << std::setprecision(2) << de;
-        if      (de < 1.0)  std::cout << ", imperceptible";
-        else if (de < 2.0)  std::cout << ", just noticeable";
-        else if (de < 10.0) std::cout << ", clearly noticeable";
-        else                std::cout << ", very different";
-        std::cout << ")\n";
+                  << "  (ΔE=" << std::fixed << std::setprecision(2) << de
+                  << ", " << deltaELabel(de) << ")\n";
         std::cout << "─────────────────────────────────────────────\n\n";
     }
     return 0;

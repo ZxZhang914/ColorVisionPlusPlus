@@ -438,9 +438,9 @@
           <div class="chip-swatch" style="background:#${c.hex}"
                title="R:${c.r} G:${c.g} B:${c.b}"></div>
           <div class="chip-name">${c.de_name}</div>
-          <div class="chip-hex">#${c.hex}</div>
+          <div class="chip-hex">#${c.hex} · ${Math.round(c.fraction * 100)}%</div>
         </div>`).join('');
-      palStatus.textContent = '6 dominant colors extracted via K-Means · ΔE2000 named';
+      palStatus.textContent = 'Dominant colors via K-Means++ in CIE Lab (C++ engine) · named by ΔE2000';
     } catch (e) {
       palStatus.textContent = 'Error: ' + e.message;
     }

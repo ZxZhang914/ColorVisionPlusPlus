@@ -30,9 +30,18 @@ target_link_libraries(color_science ${OpenCV_LIBS})
 add_executable(color_cli src/main.cpp)
 target_link_libraries(color_cli color_science ${OpenCV_LIBS})
 
+# ── Interactive camera app (modes, game, overlay) ────────────────────────────
+add_library(camera_app STATIC
+    src/CameraApp.cpp
+    src/ColorHunt.cpp
+    src/Hud.cpp
+    src/Progress.cpp
+)
+target_link_libraries(camera_app color_science ${OpenCV_LIBS})
+
 # ── color_camera: real-time camera analysis ──────────────────────────────────
 add_executable(color_camera src/realtime.cpp)
-target_link_libraries(color_camera color_science ${OpenCV_LIBS})
+target_link_libraries(color_camera camera_app color_science ${OpenCV_LIBS})
 
 # ── color_bench: quantitative evaluation framework ───────────────────────────
 add_executable(color_bench src/Benchmark.cpp)

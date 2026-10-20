@@ -10,15 +10,15 @@ import subprocess
 import json
 import os
 import re
-import io
+import tempfile
 from flask import Flask, request, jsonify, render_template
-from PIL import Image
 
 app = Flask(__name__)
 
 # Path to compiled color_cli executable (relative to this file)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CLI_EXE  = os.path.join(BASE_DIR, "..", "build", "color_cli.exe")
+CLI_EXE  = os.path.join(BASE_DIR, "..", "build",
+                        "color_cli.exe" if os.name == "nt" else "color_cli")
 
 
 def call_classifier(r: int, g: int, b: int) -> dict:
@@ -78,23 +78,24 @@ def palette():
     if "image" not in request.files:
         return jsonify({"error": "No image file provided"}), 400
 
+    # The C++ engine does the work: K-Means++ in CIE Lab, centroids named by
+    # ΔE2000. The upload goes through a temp file because the CLI reads a path.
+    fd, path = tempfile.mkstemp(suffix=".img")
     try:
-        img = Image.open(io.BytesIO(request.files["image"].read())).convert("RGB")
-        # Resize for speed, then quantize to K colors via median-cut
-        img.thumbnail((200, 200))
-        quantized = img.quantize(colors=6, method=Image.Quantize.MEDIANCUT)
-        raw_palette = quantized.getpalette()[:6 * 3]  # first 6 colors, 3 channels each
-
-        colors = []
-        for i in range(6):
-            r, g, b = raw_palette[i*3], raw_palette[i*3+1], raw_palette[i*3+2]
-            analysis = call_classifier(r, g, b)
-            colors.append(analysis)
-
-        return jsonify({"colors": colors})
+        with os.fdopen(fd, "wb") as f:
+            request.files["image"].save(f)
+        result = subprocess.run(
+            [CLI_EXE, "--palette", path, "6"],
+            capture_output=True, text=True, timeout=30
+        )
+        if result.returncode != 0:
+            return jsonify({"error": result.stderr.strip() or "Could not read image"}), 400
+        return jsonify(json.loads(result.stdout.strip()))
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    finally:
+        os.remove(path)
 
 
 if __name__ == "__main__":
